@@ -2,37 +2,22 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Catat Panen AI - Bantar 800 MDPL</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catat Panen AI - Cengkudu 800 MDPL</title>
 <style>
-body{font-family:system-ui;background:#f6f5ef;text-align:center;padding:40px 20px;margin:0}
-h1{font-size:22px;margin:10px}
+body{font-family:system-ui;background:#f6f5e9;text-align:center;padding:40px 20px}
+h1{font-size:24px;margin:10px}
 p{color:#555}
-#btn{background:#16a34a;color:#fff;border:none;padding:22px 40px;font-size:20px;border-radius:50px;width:90%;max-width:320px;font-weight:bold}
-#status{margin-top:20px;font-weight:bold;min-height:24px}
-small{display:block;margin-top:30px;color:#888}
+#btn{background:#16a34a;color:#fff;border:none;padding:20px 40px;border-radius:50px;font-size:20px;font-weight:bold;width:100%;max-width:400px}
+#status{margin-top:20px;font-weight:bold;min-height:20px}
+small{display:block;margin-top:40px;color:#888}
 </style>
 </head>
 <body>
-<h1>🌱 Catat Panen Kopi Bantar</h1>
-<p>800 MDPL - 122 Farmers - Banyumas</p>
+<h1>🌱 Catat Panen Kopi Cengkudu</h1>
+<p>800 MDPL - Cengkudu Asli - Banyumas</p>
 <button id="btn">🎙️ Rekam Panen Kopi</button>
 <p id="status">Tap untuk mulai rekam</p>
-<small>Meta Llama Global Hackathon - Oct 2026 - Cengkudu</small>
-<script>
-let rec,chunks=[];
-const b=document.getElementById('btn'),s=document.getElementById('status');
-b.onclick=async()=>{
-if(!rec||rec.state==='inactive'){
-try{
-const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-rec=new MediaRecorder(stream);chunks=[];
-rec.ondataavailable=e=>chunks.push(e.data);
-rec.onstop=()=>{s.innerText="✅ Tersimpan - "+chunks.length+" chunk - Siap Demo Juri!";b.innerText="🎙️ Rekam Lagi";b.style.background="#16a34a";};
-rec.start();b.innerText="⏹️ Stop Rekam";b.style.background="#dc2626";s.innerText="🔴 Merekam... bilang: Panen 5kg hari ini";
-}catch(e){s.innerText="❌ Mic ditolak, aktifkan izin: "+e.message}
-}else{rec.stop();}
-};
-</script>
+<small>Meta Llama Global Hackathon - Oct 2026 - Cengkudu Asli</small>
 </body>
 </html>
