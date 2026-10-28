@@ -2,14 +2,15 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Catat Panen AI - Cengkudu 800 MDPL</title>
 <style>
-body{font-family:system-ui;background:#f6f5e9;text-align:center;padding:20px}
+body{font-family:system-ui;background:#f6f5e9;text-align:center;padding:40px 20px}
 h1{font-size:24px;margin:10px}
 p{color:#555}
-#btn{background:#16a34a;color:#fff;border:none;padding:20px 40px;border-radius:50px;font-size:20px;font-weight:bold;width:100%;max-width:400px}
-#status{margin-top:20px;font-weight:bold;min-height:20px}
+#btn{background:#16a34a;color:#fff;border:none;padding:20px 30px;font-size:20px;font-weight:bold;border-radius:40px;width:100%;max-width:400px}
+#status{margin-top:20px;font-weight:bold;min-height:24px}
+#hasil{margin-top:20px;background:#fff;padding:15px;border-radius:15px;text-align:left;max-width:400px;margin:0 auto}
 small{display:block;margin-top:40px;color:#888}
 </style>
 </head>
@@ -18,7 +19,37 @@ small{display:block;margin-top:40px;color:#888}
 <p>800 MDPL - Cengkudu Asli - Banyumas</p>
 <button id="btn">🎙️ Rekam Panen Kopi</button>
 <p id="status">Tap untuk mulai rekam</p>
+<div id="hasil"></div>
 <small>Meta Llama Global Hackathon - Oct 2026 - Cengkudu</small>
+<script>
+const btn=document.getElementById('btn');
+const status=document.getElementById('status');
+const hasil=document.getElementById('hasil');
+let list=JSON.parse(localStorage.getItem('panen')||'[]');
+function tampil(){
+ if(list.length==0){hasil.innerHTML="Belum ada catatan";return;}
+ let total=list.reduce((a,b)=>a+b.kg,0);
+ let h=`<b>Total: ${total} KG dari ${list.length} catatan</b><hr>`;
+ list.slice().reverse().forEach(x=>{h+=`• ${x.kg} KG - ${x.teks} <small>(${x.jam})</small><br>`;});
+ hasil.innerHTML=h;
+}
+tampil();
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!SR){status.innerHTML="❌ Pakai Chrome Android terbaru";}
+else{
+ const r=new SR();r.lang='id-ID';
+ r.onstart=()=>{status.innerHTML="🔴 Mendengarkan... bilang 'Panen 5 kilo'";btn.innerText="⏹️ Stop";};
+ r.onend=()=>{btn.innerText="🎙️ Rekam Panen Kopi";};
+ r.onerror=(e)=>{status.innerHTML="❌ Error: "+e.error+" - Tap gembok > Izinkan Mikrofon";};
+ r.onresult=(e)=>{
+  let t=e.results[0][0].transcript;
+  status.innerHTML="✅ Kamu bilang: "+t;
+  let m=t.match(/\d+/);
+  if(m){let kg=parseInt(m[0]);list.push({kg:kg,teks:t,jam:new Date().toLocaleString()});localStorage.setItem('panen',JSON.stringify(list));tampil();}
+  else{status.innerHTML+="<br>⚠️ Gak ada angka, coba 'Panen 5 kilo'";}
+ };
+ btn.onclick=()=>{try{r.start();}catch{ r.stop();}};
+}
+</script>
 </body>
 </html>
-<!-- Cengkudu Asli 800 MDPL - Fix Bantar -->
