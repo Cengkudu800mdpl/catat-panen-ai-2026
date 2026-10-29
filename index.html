@@ -27,29 +27,34 @@ small{display:block;margin-top:40px;color:#888}
 <div id="hasil"></div>
 <button id="btn2" onclick="exportWA()">📤 Export WA</button>
 <button id="btn3" onclick="bersih()">🗑️ Bersihin</button>
-<small>Catat Panen AI 2026 - Hari 5 - Offline First</small>
+<small>Catat Panen AI 2026 - Hari 5.1 Anti-Dobel</small>
 <script>
-let lagiRekam=false;
-let totalKG=0;
+let lagiRekam=false,lastTeks="",lastWaktu=0,totalKG=0;
 let db=JSON.parse(localStorage.getItem('panen')||'[]');
-db=db.filter(x=>x && x.kg);
-localStorage.setItem('panen',JSON.stringify(db));
-if(db.length){ db.forEach(x=>{totalKG+=x.kg}); }
-function jawaKeAngka(teks){ teks=teks.toLowerCase(); const kamus={siji:1,loro:2,telu:3,papat:4,limo:5,nem:6,pitu:7,wolu:8,sanga:9,sepuluh:10}; for(let k in kamus){ if(teks.includes(k)) return kamus[k]; } let m=teks.match(/(\d+)\s*kilo/); return m?parseInt(m[1]):0; }
-function blokParser(teks){ teks=teks.toLowerCase(); let m=teks.match(/blok\s*([a-e]|be|de)/); if(!m) return "BLOK B"; let b=m[1].replace('be','b').replace('de','d').toUpperCase(); return "BLOK "+b; }
-function render(){ let h=`<b>Total: ${totalKG} KG dari ${db.length} catatan</b><hr>`; db.slice().reverse().forEach((d,i)=>{ let idx=db.length-1-i; h+=`<div class=item>${d.jam} - ${d.kg} KG <span class=blok>${d.blok||'BLOK B'}</span> <button class=del onclick="hapus(${idx})">x</button><br><small>${d.teks}</small></div>`; }); document.getElementById('hasil').innerHTML=h; }
-function hapus(i){ if(confirm('Hapus catatan ini?')){ totalKG-=db[i].kg; db.splice(i,1); localStorage.setItem('panen',JSON.stringify(db)); render(); } }
-function bersih(){ if(confirm('Bersihin semua data?')){ localStorage.clear(); db=[]; totalKG=0; render(); status.textContent='Data bersih - 0 KG'; } }
-function exportWA(){ let t=`Laporan Panen Cengkudu 800 MDPL - ${new Date().toLocaleDateString('id-ID')}\nTotal ${totalKG} KG dari ${db.length} catatan\n`; db.forEach(d=>{t+=`${d.jam} ${d.kg}KG ${d.blok}\n`;}); let url='https://wa.me/?text='+encodeURIComponent(t); window.open(url,'_blank'); }
-const btn=document.getElementById('btn'); const status=document.getElementById('status'); const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-if(!SpeechRecognition){ status.textContent="Browser tidak support mic"; } else{
- const rec=new SpeechRecognition(); rec.lang='id-ID';
- rec.onstart=()=>{ if(lagiRekam) return; lagiRekam=true; btn.textContent="🔴 Lagi Rekam..."; status.textContent="Ngomong: limo kilo blok be"; };
- rec.onend=()=>{ btn.textContent="🎙️ Rekam Panen Kopi"; setTimeout(()=>lagiRekam=false,2000); };
+db=db.filter(x=>x&&x.kg); localStorage.setItem('panen',JSON.stringify(db));
+db.forEach(x=>{totalKG+=x.kg});
+function jawaKeAngka(t){ t=t.toLowerCase(); const k={siji:1,loro:2,telu:3,papat:4,limo:5,nem:6,pitu:7,wolu:8,sanga:9,sepuluh:10}; for(let j in k){ if(t.includes(j)) return k[j]; } let m=t.match(/(\d+)\s*kilo/); return m?parseInt(m[1]):0; }
+function blokParser(t){ t=t.toLowerCase(); let m=t.match(/blok\s*([a-e])/); if(m) return "BLOK "+m[1].toUpperCase(); if(t.includes("be")||t.includes("blok b")) return "BLOK B"; if(t.includes("blok a")) return "BLOK A"; if(t.includes("blok c")) return "BLOK C"; if(t.includes("blok d")) return "BLOK D"; if(t.includes("blok e")) return "BLOK E"; return "BLOK B"; }
+function render(){ let h=`<b>Total: ${totalKG} KG dari ${db.length} catatan</b><hr>`; db.slice().reverse().forEach((d,i)=>{ let idx=db.length-1-i; h+=`<div class=item>${d.jam} - ${d.kg} KG <span class=blok>${d.blok}</span> <button class=del onclick="hapus(${idx})">x</button><br><small>${d.teks}</small></div>`; }); document.getElementById('hasil').innerHTML=h; }
+function hapus(i){ if(confirm('Hapus?')){ totalKG-=db[i].kg; db.splice(i,1); localStorage.setItem('panen',JSON.stringify(db)); render(); } }
+function bersih(){ if(confirm('Bersihin semua?')){ localStorage.clear(); db=[]; totalKG=0; render(); document.getElementById('status').textContent='Data bersih - 0 KG'; } }
+function exportWA(){ let t=`Laporan Cengkudu ${new Date().toLocaleDateString('id-ID')} - Total ${totalKG} KG\n`; db.forEach(d=>{t+=`${d.jam} ${d.kg}KG ${d.blok}\n`;}); window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank'); }
+const btn=document.getElementById('btn'); const status=document.getElementById('status');
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!SR){ status.textContent="Browser tidak support mic"; }
+else{
+ const rec=new SR(); rec.lang='id-ID'; rec.interimResults=false; rec.continuous=false;
+ rec.onstart=()=>{ lagiRekam=true; btn.textContent="🔴 Lagi Rekam..."; status.textContent="Ngomong: limo kilo blok a"; };
+ rec.onend=()=>{ btn.textContent="🎙️ Rekam Panen Kopi"; lagiRekam=false; };
  rec.onresult=(e)=>{
-   let teks=e.results[0][0].transcript; let kg=jawaKeAngka(teks); let blok=blokParser(teks);
-   if(kg==0){ status.textContent="Gak kedengeran kilo-nya, coba lagi"; return; }
-   if(lagiRekam && e.results[0].isFinal){ let data={kg:kg, blok:blok, teks:teks, jam:new Date().toLocaleTimeString('id-ID')}; db.push(data); localStorage.setItem('panen',JSON.stringify(db)); totalKG+=kg; render(); status.textContent=`Kamu bilang: ${teks} => ${kg} KG ${blok}`; }
+   let teks=e.results[0][0].transcript.trim(); let now=Date.now();
+   if(teks==lastTeks && (now-lastWaktu)<4000){ status.textContent="Sudah kecatet - anti dobel ✅"; return; }
+   let kg=jawaKeAngka(teks); let blok=blokParser(teks);
+   if(kg==0){ status.textContent="Gak denger kilo - coba lagi"; return; }
+   lastTeks=teks; lastWaktu=now;
+   let data={kg:kg, blok:blok, teks:teks, jam:new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})};
+   db.push(data); localStorage.setItem('panen',JSON.stringify(db)); totalKG+=kg; render();
+   status.textContent=`${teks} => ${kg} KG ${blok}`; try{rec.stop();}catch(e){}
  };
  btn.onclick=()=>{ if(lagiRekam) return; rec.start(); };
 }
