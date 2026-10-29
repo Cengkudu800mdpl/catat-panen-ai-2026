@@ -2,16 +2,17 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Catat Panen AI - Cengkudu 800 MDPL</title>
 <style>
-body{font-family:system-ui;background:#f6f5e9;text-align:center;padding:40px 20px}
+body{font-family:system-ui;background:#f6f5e9;padding:20px}
 h1{font-size:24px;margin:10px}
 p{color:#555}
-#btn{background:#16a34a;color:#fff;border:none;padding:20px 30px;font-size:20px;font-weight:bold;border-radius:40px;width:100%;max-width:400px}
-#status{margin-top:20px;font-weight:bold;min-height:24px}
-#hasil{margin-top:20px;background:#fff;padding:15px;border-radius:15px;text-align:left;max-width:400px;margin:0 auto}
+#btn{background:#16a34a;color:#fff;border:none;padding:15px 25px;font-size:18px;border-radius:12px;width:100%}
+#status{margin-top:20px;font-weight:bold;min-height:20px}
+#hasil{margin-top:20px;background:#fff;padding:15px;border-radius:12px;min-height:100px}
 small{display:block;margin-top:40px;color:#888}
+.blok{color:#16a34a;font-weight:bold}
 </style>
 </head>
 <body>
@@ -20,35 +21,52 @@ small{display:block;margin-top:40px;color:#888}
 <button id="btn">🎙️ Rekam Panen Kopi</button>
 <p id="status">Tap untuk mulai rekam</p>
 <div id="hasil"></div>
-<small>Meta Llama Global Hackathon - Oct 2026 - Cengkudu</small>
+<small>Catat Panen AI 2026 - Offline First - Banyumas</small>
 <script>
+let lagiRekam=false;
+let totalKG=0; let list=[];
+let db=JSON.parse(localStorage.getItem('panen')||'[]');
+if(db.length){ db.forEach(x=>{totalKG+=x.kg}); render(); }
+
+function jawaKeAngka(teks){
+  teks=teks.toLowerCase();
+  const kamus={siji:1,loro:2,telu:3,papat:4,limo:5,nem:6,pitu:7,wolu:8,sanga:9,sepuluh:10,sewelas:11,rolas:12};
+  for(let k in kamus){ if(teks.includes(k)) return kamus[k]; }
+  let m=teks.match(/(\d+)\s*kilo/); return m?parseInt(m[1]):0;
+}
+function blokParser(teks){
+  teks=teks.toLowerCase();
+  let m=teks.match(/blok\s*([a-e]|be|de)/); if(!m) return "BLOK ?";
+  let b=m[1].replace('be','B-E').replace('de','D').toUpperCase();
+  return "BLOK "+b;
+}
 const btn=document.getElementById('btn');
 const status=document.getElementById('status');
-const hasil=document.getElementById('hasil');
-let list=JSON.parse(localStorage.getItem('panen')||'[]');
-function tampil(){
- if(list.length==0){hasil.innerHTML="Belum ada catatan";return;}
- let total=list.reduce((a,b)=>a+b.kg,0);
- let h=`<b>Total: ${total} KG dari ${list.length} catatan</b><hr>`;
- list.slice().reverse().forEach(x=>{h+=`• ${x.kg} KG - ${x.teks} <small>(${x.jam})</small><br>`;});
- hasil.innerHTML=h;
-}
-tampil();
-const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-if(!SR){status.innerHTML="❌ Pakai Chrome Android terbaru";}
+const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!SpeechRecognition){ status.textContent="Browser tidak support mic"; }
 else{
- const r=new SR();r.lang='id-ID';
- r.onstart=()=>{status.innerHTML="🔴 Mendengarkan... bilang 'Panen 5 kilo'";btn.innerText="⏹️ Stop";};
- r.onend=()=>{btn.innerText="🎙️ Rekam Panen Kopi";};
- r.onerror=(e)=>{status.innerHTML="❌ Error: "+e.error+" - Tap gembok > Izinkan Mikrofon";};
- r.onresult=(e)=>{
-  let t=e.results[0][0].transcript;
-  status.innerHTML="✅ Kamu bilang: "+t;
-  let m=t.match(/\d+/);
-  if(m){let kg=parseInt(m[0]);list.push({kg:kg,teks:t,jam:new Date().toLocaleString()});localStorage.setItem('panen',JSON.stringify(list));tampil();}
-  else{status.innerHTML+="<br>⚠️ Gak ada angka, coba 'Panen 5 kilo'";}
- };
- btn.onclick=()=>{try{r.start();}catch{ r.stop();}};
+  const rec=new SpeechRecognition(); rec.lang='id-ID';
+  rec.onstart=()=>{ if(lagiRekam) return; lagiRekam=true; btn.textContent="🔴 Lagi Rekam..."; status.textContent="Ngomong: limo kilo blok be"; };
+  rec.onend=()=>{ btn.textContent="🎙️ Rekam Panen Kopi"; setTimeout(()=>lagiRekam=false,2000); };
+  rec.onresult=(e)=>{
+    let teks=e.results[0][0].transcript;
+    let kg=jawaKeAngka(teks);
+    let blok=blokParser(teks);
+    if(kg==0){ status.textContent="Gak kedengeran kilo-nya, coba lagi"; return; }
+    if(lagiRekam && e.results[0].isFinal){
+      // anti dobel sudah via lagiRekam
+      let data={kg:kg, blok:blok, teks:teks, jam:new Date().toLocaleTimeString('id-ID')};
+      db.push(data); localStorage.setItem('panen',JSON.stringify(db));
+      totalKG+=kg; render();
+      status.textContent=`Kamu bilang: ${teks} => ${kg} KG ${blok}`;
+    }
+  };
+  btn.onclick=()=>{ if(lagiRekam) return; rec.start(); };
+}
+function render(){
+  let h=`<b>Total: ${totalKG} KG dari ${db.length} catatan</b><hr>`;
+  db.slice().reverse().forEach(d=>{ h+=`${d.jam} - ${d.kg} KG <span class=blok>${d.blok}</span><br><small>${d.teks}</small><hr>`; });
+  document.getElementById('hasil').innerHTML=h;
 }
 </script>
 </body>
